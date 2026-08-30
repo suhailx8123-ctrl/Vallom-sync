@@ -68,6 +68,8 @@ The project is split into two main components:
     ```
 4.  Open [http://localhost:3000](http://localhost:3000) with your browser to see the dashboard.
 
+5.  You can also host the webserver/website in services like vercel
+
 ## 📡 API Endpoints
 
 *   **`POST /api/telemetry`**: Receives live JSON telemetry from the ESP32. Responds with the latest `targetSPM` to keep the hardware in sync.
