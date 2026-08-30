@@ -1,11 +1,11 @@
-#include <Arduino.h>
-#include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-#include <WiFi.h>
-#include <WiFiUdp.h>
-#include <WiFiClientSecure.h>
+#include <Arduino.h>
 #include <HTTPClient.h>
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <WiFiUdp.h>
+#include <Wire.h>
 
 // =========================================================
 // VALLAM SYNC
@@ -23,9 +23,9 @@
 // WIFI
 // =========================================================
 
-const char* WIFI_SSID = "Tinker Space";
-const char* WIFI_PASSWORD = "123tinkerspace";
-const char* WEB_API_URL = "https://vallom-sync-tracker.vercel.app/api/telemetry";
+const char *WIFI_SSID = "Tinker Space";
+const char *WIFI_PASSWORD = "123tinkerspace";
+const char *WEB_API_URL = "https://vallom-sync-one.vercel.app/api/telemetry";
 
 // =========================================================
 // WIFI UDP
@@ -48,10 +48,11 @@ WiFiUDP udp;
 
 // IMPORTANT:
 // Use your own Gemini API key.
-const char* GEMINI_API_KEY = "AQ.Ab8RN6LZYl60Fp4Pv81ux3i9xsoTOS-6afO_Z_EkQGcBpaHXUg";
+const char *GEMINI_API_KEY =
+    "AQ.Ab8RN6LZYl60Fp4Pv81ux3i9xsoTOS-6afO_Z_EkQGcBpaHXUg";
 
 // Gemini model
-const char* GEMINI_MODEL = "gemini-3.5-flash";
+const char *GEMINI_MODEL = "gemini-3.5-flash";
 
 // =========================================================
 // PINS
@@ -71,12 +72,7 @@ const char* GEMINI_MODEL = "gemini-3.5-flash";
 #define SCREEN_HEIGHT 64
 #define OLED_ADDRESS 0x3C
 
-Adafruit_SSD1306 display(
-  SCREEN_WIDTH,
-  SCREEN_HEIGHT,
-  &Wire,
-  -1
-);
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 // =========================================================
 // MPU6500
@@ -84,10 +80,10 @@ Adafruit_SSD1306 display(
 
 #define MPU6500_ADDRESS 0x68
 
-#define MPU_WHO_AM_I     0x75
-#define MPU_PWR_MGMT_1   0x6B
+#define MPU_WHO_AM_I 0x75
+#define MPU_PWR_MGMT_1 0x6B
 #define MPU_ACCEL_CONFIG 0x1C
-#define MPU_CONFIG       0x1A
+#define MPU_CONFIG 0x1A
 #define MPU_ACCEL_XOUT_H 0x3B
 
 // MPU6500 ±4G
@@ -118,12 +114,7 @@ const int RHYTHM_CHANGE_THRESHOLD = 8;
 // MODES
 // =========================================================
 
-enum Mode {
-  NORMAL,
-  MEDIUM,
-  HIGH_SPEED,
-  CUSTOM
-};
+enum Mode { NORMAL, MEDIUM, HIGH_SPEED, CUSTOM };
 
 Mode currentMode = NORMAL;
 
@@ -198,14 +189,9 @@ struct WiFiData {
 // MPU WRITE
 // =========================================================
 
-void mpuWriteByte(
-  uint8_t reg,
-  uint8_t data
-) {
+void mpuWriteByte(uint8_t reg, uint8_t data) {
 
-  Wire.beginTransmission(
-    (uint8_t)MPU6500_ADDRESS
-  );
+  Wire.beginTransmission((uint8_t)MPU6500_ADDRESS);
 
   Wire.write(reg);
   Wire.write(data);
@@ -217,27 +203,18 @@ void mpuWriteByte(
 // MPU READ
 // =========================================================
 
-uint8_t mpuReadByte(
-  uint8_t reg
-) {
+uint8_t mpuReadByte(uint8_t reg) {
 
-  Wire.beginTransmission(
-    (uint8_t)MPU6500_ADDRESS
-  );
+  Wire.beginTransmission((uint8_t)MPU6500_ADDRESS);
 
   Wire.write(reg);
 
-  if (
-    Wire.endTransmission(false) != 0
-  ) {
+  if (Wire.endTransmission(false) != 0) {
 
     return 0xFF;
   }
 
-  Wire.requestFrom(
-    (uint8_t)MPU6500_ADDRESS,
-    (uint8_t)1
-  );
+  Wire.requestFrom((uint8_t)MPU6500_ADDRESS, (uint8_t)1);
 
   if (Wire.available()) {
 
@@ -256,50 +233,34 @@ bool initializeMPU6500() {
   Serial.println();
   Serial.println("Initializing MPU6500...");
 
-  uint8_t whoAmI =
-    mpuReadByte(MPU_WHO_AM_I);
+  uint8_t whoAmI = mpuReadByte(MPU_WHO_AM_I);
 
   Serial.print("WHO_AM_I = 0x");
   Serial.println(whoAmI, HEX);
 
   if (whoAmI != 0x70) {
 
-    Serial.println(
-      "ERROR: MPU6500 not detected!"
-    );
+    Serial.println("ERROR: MPU6500 not detected!");
 
     return false;
   }
 
-  Serial.println(
-    "MPU6500 detected!"
-  );
+  Serial.println("MPU6500 detected!");
 
   // Wake up MPU
-  mpuWriteByte(
-    MPU_PWR_MGMT_1,
-    0x00
-  );
+  mpuWriteByte(MPU_PWR_MGMT_1, 0x00);
 
   delay(100);
 
   // Accelerometer ±4G
-  mpuWriteByte(
-    MPU_ACCEL_CONFIG,
-    0x08
-  );
+  mpuWriteByte(MPU_ACCEL_CONFIG, 0x08);
 
   // Low pass filter
-  mpuWriteByte(
-    MPU_CONFIG,
-    0x03
-  );
+  mpuWriteByte(MPU_CONFIG, 0x03);
 
   delay(100);
 
-  Serial.println(
-    "MPU6500 READY!"
-  );
+  Serial.println("MPU6500 READY!");
 
   return true;
 }
@@ -308,23 +269,13 @@ bool initializeMPU6500() {
 // READ MPU6500
 // =========================================================
 
-void readMPU6500(
-  float &accelX,
-  float &accelY,
-  float &accelZ
-) {
+void readMPU6500(float &accelX, float &accelY, float &accelZ) {
 
-  Wire.beginTransmission(
-    (uint8_t)MPU6500_ADDRESS
-  );
+  Wire.beginTransmission((uint8_t)MPU6500_ADDRESS);
 
-  Wire.write(
-    (uint8_t)MPU_ACCEL_XOUT_H
-  );
+  Wire.write((uint8_t)MPU_ACCEL_XOUT_H);
 
-  if (
-    Wire.endTransmission(false) != 0
-  ) {
+  if (Wire.endTransmission(false) != 0) {
 
     accelX = 0;
     accelY = 0;
@@ -333,10 +284,7 @@ void readMPU6500(
     return;
   }
 
-  Wire.requestFrom(
-    (uint8_t)MPU6500_ADDRESS,
-    (uint8_t)6
-  );
+  Wire.requestFrom((uint8_t)MPU6500_ADDRESS, (uint8_t)6);
 
   if (Wire.available() < 6) {
 
@@ -347,26 +295,17 @@ void readMPU6500(
     return;
   }
 
-  int16_t rawX =
-    ((int16_t)Wire.read() << 8) |
-    Wire.read();
+  int16_t rawX = ((int16_t)Wire.read() << 8) | Wire.read();
 
-  int16_t rawY =
-    ((int16_t)Wire.read() << 8) |
-    Wire.read();
+  int16_t rawY = ((int16_t)Wire.read() << 8) | Wire.read();
 
-  int16_t rawZ =
-    ((int16_t)Wire.read() << 8) |
-    Wire.read();
+  int16_t rawZ = ((int16_t)Wire.read() << 8) | Wire.read();
 
-  accelX =
-    (rawX / ACCEL_SCALE) * 9.80665;
+  accelX = (rawX / ACCEL_SCALE) * 9.80665;
 
-  accelY =
-    (rawY / ACCEL_SCALE) * 9.80665;
+  accelY = (rawY / ACCEL_SCALE) * 9.80665;
 
-  accelZ =
-    (rawZ / ACCEL_SCALE) * 9.80665;
+  accelZ = (rawZ / ACCEL_SCALE) * 9.80665;
 }
 
 // =========================================================
@@ -377,29 +316,29 @@ void setTargetSPM() {
 
   switch (currentMode) {
 
-    case NORMAL:
+  case NORMAL:
 
-      targetSPM = 90;
+    targetSPM = 90;
 
-      break;
+    break;
 
-    case MEDIUM:
+  case MEDIUM:
 
-      targetSPM = 100;
+    targetSPM = 120;
 
-      break;
+    break;
 
-    case HIGH_SPEED:
+  case HIGH_SPEED:
 
-      targetSPM = 120;
+    targetSPM = 140;
 
-      break;
+    break;
 
-    case CUSTOM:
+  case CUSTOM:
 
-      targetSPM = 95;
+    targetSPM = 95;
 
-      break;
+    break;
   }
 }
 
@@ -409,15 +348,11 @@ void setTargetSPM() {
 
 void startMotor() {
 
-  digitalWrite(
-    MOTOR_PIN,
-    HIGH
-  );
+  digitalWrite(MOTOR_PIN, HIGH);
 
   motorIsOn = true;
 
-  motorStartTime =
-    millis();
+  motorStartTime = millis();
 }
 
 // =========================================================
@@ -426,15 +361,9 @@ void startMotor() {
 
 void updateMotor() {
 
-  if (
-    motorIsOn &&
-    millis() - motorStartTime >= 100
-  ) {
+  if (motorIsOn && millis() - motorStartTime >= 100) {
 
-    digitalWrite(
-      MOTOR_PIN,
-      LOW
-    );
+    digitalWrite(MOTOR_PIN, LOW);
 
     motorIsOn = false;
   }
@@ -448,9 +377,7 @@ void updateDisplay() {
 
   display.clearDisplay();
 
-  display.setTextColor(
-    SSD1306_WHITE
-  );
+  display.setTextColor(SSD1306_WHITE);
 
   display.setTextSize(1);
 
@@ -468,29 +395,29 @@ void updateDisplay() {
 
   switch (currentMode) {
 
-    case NORMAL:
+  case NORMAL:
 
-      display.println("NORMAL");
+    display.println("NORMAL");
 
-      break;
+    break;
 
-    case MEDIUM:
+  case MEDIUM:
 
-      display.println("MEDIUM");
+    display.println("MEDIUM");
 
-      break;
+    break;
 
-    case HIGH_SPEED:
+  case HIGH_SPEED:
 
-      display.println("HIGH");
+    display.println("HIGH");
 
-      break;
+    break;
 
-    case CUSTOM:
+  case CUSTOM:
 
-      display.println("CUSTOM");
+    display.println("CUSTOM");
 
-      break;
+    break;
   }
 
   display.setTextSize(2);
@@ -527,32 +454,19 @@ void updateDisplay() {
 // PACE WARNING
 // =========================================================
 
-void showPaceWarning(
-  const char* title,
-  const char* message
-) {
+void showPaceWarning(const char *title, const char *message) {
 
   display.clearDisplay();
 
-  display.setTextColor(
-    SSD1306_WHITE
-  );
+  display.setTextColor(SSD1306_WHITE);
 
   display.setTextSize(1);
 
   display.setCursor(0, 0);
 
-  display.println(
-    "!! VALLAM SYNC !!"
-  );
+  display.println("!! VALLAM SYNC !!");
 
-  display.drawLine(
-    0,
-    10,
-    127,
-    10,
-    SSD1306_WHITE
-  );
+  display.drawLine(0, 10, 127, 10, SSD1306_WHITE);
 
   display.setTextSize(2);
 
@@ -583,90 +497,53 @@ void showPaceWarning(
 // AI MESSAGE DISPLAY
 // =========================================================
 
-void showAIMessage(
-  String message
-) {
+void showAIMessage(String message) {
 
   display.clearDisplay();
 
-  display.setTextColor(
-    SSD1306_WHITE
-  );
+  display.setTextColor(SSD1306_WHITE);
 
   display.setTextSize(1);
 
   display.setCursor(0, 0);
 
-  display.println(
-    "AI COACH"
-  );
+  display.println("AI COACH");
 
-  display.drawLine(
-    0,
-    10,
-    127,
-    10,
-    SSD1306_WHITE
-  );
+  display.drawLine(0, 10, 127, 10, SSD1306_WHITE);
 
   // Limit message
   if (message.length() > 120) {
 
-    message =
-      message.substring(0, 120);
+    message = message.substring(0, 120);
   }
 
   // Remove quotes
-  message.replace(
-    "\"",
-    ""
-  );
+  message.replace("\"", "");
 
   int line = 0;
 
   String lineText = "";
 
-  for (
-    int i = 0;
-    i <= message.length();
-    i++
-  ) {
+  for (int i = 0; i <= message.length(); i++) {
 
-    char c =
-      (i < message.length())
-      ? message[i]
-      : ' ';
+    char c = (i < message.length()) ? message[i] : ' ';
 
-    if (
-      c == ' ' ||
-      c == '\n'
-    ) {
+    if (c == ' ' || c == '\n') {
 
-      if (
-        lineText.length() > 0
-      ) {
+      if (lineText.length() > 0) {
 
-        if (
-          lineText.length() + 1 > 20
-        ) {
+        if (lineText.length() + 1 > 20) {
 
-          display.setCursor(
-            0,
-            14 + line * 9
-          );
+          display.setCursor(0, 14 + line * 9);
 
-          display.println(
-            lineText
-          );
+          display.println(lineText);
 
           line++;
 
           lineText = "";
         }
 
-        if (
-          lineText.length() > 0
-        ) {
+        if (lineText.length() > 0) {
 
           lineText += " ";
         }
@@ -677,27 +554,17 @@ void showAIMessage(
       lineText += c;
     }
 
-    if (
-      line >= 5
-    ) {
+    if (line >= 5) {
 
       break;
     }
   }
 
-  if (
-    line < 5 &&
-    lineText.length() > 0
-  ) {
+  if (line < 5 && lineText.length() > 0) {
 
-    display.setCursor(
-      0,
-      14 + line * 9
-    );
+    display.setCursor(0, 14 + line * 9);
 
-    display.println(
-      lineText
-    );
+    display.println(lineText);
   }
 
   display.display();
@@ -710,23 +577,15 @@ void showAIMessage(
 void connectWiFi() {
 
   Serial.println();
-  Serial.println(
-    "Connecting to WiFi..."
-  );
+  Serial.println("Connecting to WiFi...");
 
   WiFi.mode(WIFI_STA);
 
-  WiFi.begin(
-    WIFI_SSID,
-    WIFI_PASSWORD
-  );
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   int attempts = 0;
 
-  while (
-    WiFi.status() != WL_CONNECTED &&
-    attempts < 30
-  ) {
+  while (WiFi.status() != WL_CONNECTED && attempts < 30) {
 
     delay(500);
 
@@ -737,35 +596,21 @@ void connectWiFi() {
 
   Serial.println();
 
-  if (
-    WiFi.status() == WL_CONNECTED
-  ) {
+  if (WiFi.status() == WL_CONNECTED) {
 
-    Serial.println(
-      "WiFi CONNECTED!"
-    );
+    Serial.println("WiFi CONNECTED!");
 
-    Serial.print(
-      "Sender IP address: "
-    );
+    Serial.print("Sender IP address: ");
 
-    Serial.println(
-      WiFi.localIP()
-    );
+    Serial.println(WiFi.localIP());
 
-    Serial.print(
-      "Gateway IP address: "
-    );
+    Serial.print("Gateway IP address: ");
 
-    Serial.println(
-      GATEWAY_IP
-    );
+    Serial.println(GATEWAY_IP);
 
   } else {
 
-    Serial.println(
-      "WiFi connection FAILED!"
-    );
+    Serial.println("WiFi connection FAILED!");
   }
 }
 
@@ -775,83 +620,51 @@ void connectWiFi() {
 
 void sendWiFiData() {
 
-  if (
-    WiFi.status() != WL_CONNECTED
-  ) {
+  if (WiFi.status() != WL_CONNECTED) {
 
-    Serial.println(
-      "WiFi disconnected - data not sent."
-    );
+    Serial.println("WiFi disconnected - data not sent.");
 
     return;
   }
 
   WiFiData data;
 
-  data.athlete_id =
-    ATHLETE_ID;
+  data.athlete_id = ATHLETE_ID;
 
-  data.current_spm =
-    currentSPM;
+  data.current_spm = currentSPM;
 
-  data.target_spm =
-    targetSPM;
+  data.target_spm = targetSPM;
 
   // Start UDP packet
-  udp.beginPacket(
-    GATEWAY_IP,
-    UDP_PORT
-  );
+  udp.beginPacket(GATEWAY_IP, UDP_PORT);
 
   // Send structure
-  udp.write(
-    (uint8_t*)&data,
-    sizeof(data)
-  );
+  udp.write((uint8_t *)&data, sizeof(data));
 
   // Finish packet
-  int result =
-    udp.endPacket();
+  int result = udp.endPacket();
 
   if (result == 1) {
 
-    Serial.print(
-      "UDP SENT -> "
-    );
+    Serial.print("UDP SENT -> ");
 
-    Serial.print(
-      GATEWAY_IP
-    );
+    Serial.print(GATEWAY_IP);
 
-    Serial.print(
-      " | Athlete: "
-    );
+    Serial.print(" | Athlete: ");
 
-    Serial.print(
-      data.athlete_id
-    );
+    Serial.print(data.athlete_id);
 
-    Serial.print(
-      " | SPM: "
-    );
+    Serial.print(" | SPM: ");
 
-    Serial.print(
-      data.current_spm
-    );
+    Serial.print(data.current_spm);
 
-    Serial.print(
-      " | Target: "
-    );
+    Serial.print(" | Target: ");
 
-    Serial.println(
-      data.target_spm
-    );
+    Serial.println(data.target_spm);
 
   } else {
 
-    Serial.println(
-      "UDP SEND FAILED!"
-    );
+    Serial.println("UDP SEND FAILED!");
   }
 }
 
@@ -932,29 +745,15 @@ void sendTelemetryToWeb() {
 // JSON ESCAPE
 // =========================================================
 
-String jsonEscape(
-  String input
-) {
+String jsonEscape(String input) {
 
-  input.replace(
-    "\\",
-    "\\\\"
-  );
+  input.replace("\\", "\\\\");
 
-  input.replace(
-    "\"",
-    "\\\""
-  );
+  input.replace("\"", "\\\"");
 
-  input.replace(
-    "\n",
-    "\\n"
-  );
+  input.replace("\n", "\\n");
 
-  input.replace(
-    "\r",
-    "\\r"
-  );
+  input.replace("\r", "\\r");
 
   return input;
 }
@@ -966,28 +765,18 @@ String jsonEscape(
 void analyzeWithGemini() {
 
   Serial.println();
-  Serial.println(
-    "========== AI COACH =========="
-  );
+  Serial.println("========== AI COACH ==========");
 
-  if (
-    WiFi.status() != WL_CONNECTED
-  ) {
+  if (WiFi.status() != WL_CONNECTED) {
 
-    Serial.println(
-      "WiFi not connected."
-    );
+    Serial.println("WiFi not connected.");
 
     return;
   }
 
-  if (
-    strlen(GEMINI_API_KEY) < 20
-  ) {
+  if (strlen(GEMINI_API_KEY) < 20) {
 
-    Serial.println(
-      "Gemini API key missing!"
-    );
+    Serial.println("Gemini API key missing!");
 
     return;
   }
@@ -996,32 +785,23 @@ void analyzeWithGemini() {
   // Snapshot
   // -------------------------------------------------------
 
-  int localSPM =
-    currentSPM;
+  int localSPM = currentSPM;
 
-  int localPreviousSPM =
-    previousSPM;
+  int localPreviousSPM = previousSPM;
 
-  int localTargetSPM =
-    targetSPM;
+  int localTargetSPM = targetSPM;
 
-  int localStrokeCount =
-    strokeCount;
+  int localStrokeCount = strokeCount;
 
-  float localAccelSum =
-    accelerationSum;
+  float localAccelSum = accelerationSum;
 
-  float localAccelMax =
-    accelerationMax;
+  float localAccelMax = accelerationMax;
 
-  int localSPMSum =
-    spmSum;
+  int localSPMSum = spmSum;
 
-  int localSPMSamples =
-    spmSamples;
+  int localSPMSamples = spmSamples;
 
-  String localContext =
-    paceContext;
+  String localContext = paceContext;
 
   // -------------------------------------------------------
   // Calculate average
@@ -1029,48 +809,27 @@ void analyzeWithGemini() {
 
   float averageSPM = 0;
 
-  if (
-    localSPMSamples > 0
-  ) {
+  if (localSPMSamples > 0) {
 
-    averageSPM =
-      (float)localSPMSum /
-      localSPMSamples;
+    averageSPM = (float)localSPMSum / localSPMSamples;
   }
 
   float averageAcceleration = 0;
 
-  if (
-    localStrokeCount > 0
-  ) {
+  if (localStrokeCount > 0) {
 
-    averageAcceleration =
-      localAccelSum /
-      localStrokeCount;
+    averageAcceleration = localAccelSum / localStrokeCount;
   }
 
-  float targetDifference =
-    abs(
-      localSPM -
-      localTargetSPM
-    );
+  float targetDifference = abs(localSPM - localTargetSPM);
 
   float consistency = 100;
 
-  if (
-    localTargetSPM > 0
-  ) {
+  if (localTargetSPM > 0) {
 
-    consistency =
-      100 -
-      (
-        targetDifference /
-        localTargetSPM
-      ) * 100;
+    consistency = 100 - (targetDifference / localTargetSPM) * 100;
 
-    if (
-      consistency < 0
-    ) {
+    if (consistency < 0) {
 
       consistency = 0;
     }
@@ -1082,94 +841,62 @@ void analyzeWithGemini() {
 
   String prompt =
 
-    "You are Vallam Sync AI Coach. "
-    "Vallam Sync is an intelligent "
-    "traditional Kerala vallam rowing "
-    "performance system. "
-    "Analyze the athlete's live rowing data. "
-    "Give ONE short actionable coaching message. "
-    "Do not diagnose medical conditions. "
-    "If there is a rapid pace increase, tell "
-    "the athlete to control the pace. "
-    "If there is a rapid pace decrease, tell "
-    "the athlete to rebuild rhythm gradually. "
-    "If rhythm is unstable, tell them to "
-    "make strokes consistent. "
-    "If performance is good, encourage them. "
-    "Maximum 55 characters. "
-    "Use simple words suitable for a tiny OLED. "
+      "You are Vallam Sync AI Coach. "
+      "Vallam Sync is an intelligent "
+      "traditional Kerala vallam rowing "
+      "performance system. "
+      "Analyze the athlete's live rowing data. "
+      "Give ONE short actionable coaching message. "
+      "Do not diagnose medical conditions. "
+      "If there is a rapid pace increase, tell "
+      "the athlete to control the pace. "
+      "If there is a rapid pace decrease, tell "
+      "the athlete to rebuild rhythm gradually. "
+      "If rhythm is unstable, tell them to "
+      "make strokes consistent. "
+      "If performance is good, encourage them. "
+      "Maximum 55 characters. "
+      "Use simple words suitable for a tiny OLED. "
 
-    "Context=";
+      "Context=";
 
-  prompt +=
-    localContext;
+  prompt += localContext;
 
-  prompt +=
-    ", CurrentSPM=";
+  prompt += ", CurrentSPM=";
 
-  prompt +=
-    String(localSPM);
+  prompt += String(localSPM);
 
-  prompt +=
-    ", PreviousSPM=";
+  prompt += ", PreviousSPM=";
 
-  prompt +=
-    String(localPreviousSPM);
+  prompt += String(localPreviousSPM);
 
-  prompt +=
-    ", TargetSPM=";
+  prompt += ", TargetSPM=";
 
-  prompt +=
-    String(localTargetSPM);
+  prompt += String(localTargetSPM);
 
-  prompt +=
-    ", AverageSPM=";
+  prompt += ", AverageSPM=";
 
-  prompt +=
-    String(
-      averageSPM,
-      1
-    );
+  prompt += String(averageSPM, 1);
 
-  prompt +=
-    ", AverageAcceleration=";
+  prompt += ", AverageAcceleration=";
 
-  prompt +=
-    String(
-      averageAcceleration,
-      1
-    );
+  prompt += String(averageAcceleration, 1);
 
-  prompt +=
-    "m/s2";
+  prompt += "m/s2";
 
-  prompt +=
-    ", PeakAcceleration=";
+  prompt += ", PeakAcceleration=";
 
-  prompt +=
-    String(
-      localAccelMax,
-      1
-    );
+  prompt += String(localAccelMax, 1);
 
-  prompt +=
-    "m/s2";
+  prompt += "m/s2";
 
-  prompt +=
-    ", Consistency=";
+  prompt += ", Consistency=";
 
-  prompt +=
-    String(
-      consistency,
-      1
-    );
+  prompt += String(consistency, 1);
 
-  prompt +=
-    "%.";
+  prompt += "%.";
 
-  Serial.println(
-    prompt
-  );
+  Serial.println(prompt);
 
   // -------------------------------------------------------
   // HTTPS
@@ -1182,129 +909,80 @@ void analyzeWithGemini() {
 
   HTTPClient https;
 
-  https.setTimeout(
-    6000
-  );
+  https.setTimeout(6000);
 
-  String url =
-    "https://generativelanguage.googleapis.com/"
-    "v1beta/models/";
+  String url = "https://generativelanguage.googleapis.com/"
+               "v1beta/models/";
 
-  url +=
-    GEMINI_MODEL;
+  url += GEMINI_MODEL;
 
-  url +=
-    ":generateContent?key=";
+  url += ":generateContent?key=";
 
-  url +=
-    GEMINI_API_KEY;
+  url += GEMINI_API_KEY;
 
-  Serial.println(
-    "Connecting Gemini..."
-  );
+  Serial.println("Connecting Gemini...");
 
-  if (
-    !https.begin(
-      client,
-      url
-    )
-  ) {
+  if (!https.begin(client, url)) {
 
-    Serial.println(
-      "HTTPS BEGIN FAILED!"
-    );
+    Serial.println("HTTPS BEGIN FAILED!");
 
     return;
   }
 
-  https.addHeader(
-    "Content-Type",
-    "application/json"
-  );
+  https.addHeader("Content-Type", "application/json");
 
   // -------------------------------------------------------
   // JSON
   // -------------------------------------------------------
 
-  String safePrompt =
-    jsonEscape(prompt);
+  String safePrompt = jsonEscape(prompt);
 
-  String json =
-    "{"
-      "\"contents\":["
-        "{"
-          "\"parts\":["
-            "{"
-              "\"text\":\"";
+  String json = "{"
+                "\"contents\":["
+                "{"
+                "\"parts\":["
+                "{"
+                "\"text\":\"";
 
-  json +=
-    safePrompt;
+  json += safePrompt;
 
-  json +=
-              "\"}"
+  json += "\"}"
           "]"
-        "}"
-      "]"
-    "}";
+          "}"
+          "]"
+          "}";
 
-  Serial.println(
-    "Sending request..."
-  );
+  Serial.println("Sending request...");
 
-  int httpCode =
-    https.POST(json);
+  int httpCode = https.POST(json);
 
-  Serial.print(
-    "Gemini HTTP code: "
-  );
+  Serial.print("Gemini HTTP code: ");
 
-  Serial.println(
-    httpCode
-  );
+  Serial.println(httpCode);
 
   // -------------------------------------------------------
   // SUCCESS
   // -------------------------------------------------------
 
-  if (
-    httpCode == 200
-  ) {
+  if (httpCode == 200) {
 
-    String response =
-      https.getString();
+    String response = https.getString();
 
-    Serial.println(
-      "Gemini response received!"
-    );
+    Serial.println("Gemini response received!");
 
     // -----------------------------------------------------
     // Find text
     // -----------------------------------------------------
 
-    int textIndex =
-      response.indexOf(
-        "\"text\""
-      );
+    int textIndex = response.indexOf("\"text\"");
 
-    if (
-      textIndex >= 0
-    ) {
+    if (textIndex >= 0) {
 
-      int colon =
-        response.indexOf(
-          ':',
-          textIndex
-        );
+      int colon = response.indexOf(':', textIndex);
 
-      int start =
-        response.indexOf(
-          '"',
-          colon + 1
-        );
+      int start = response.indexOf('"', colon + 1);
 
-      if (
-        start >= 0
-      ) {
+      if (start >= 0) {
 
         start++;
 
@@ -1312,34 +990,21 @@ void analyzeWithGemini() {
 
         bool escaped = false;
 
-        for (
-          int i = start;
-          i < response.length();
-          i++
-        ) {
+        for (int i = start; i < response.length(); i++) {
 
-          char c =
-            response[i];
+          char c = response[i];
 
-          if (
-            escaped
-          ) {
+          if (escaped) {
 
-            if (
-              c == 'n'
-            ) {
+            if (c == 'n') {
 
               result += '\n';
 
-            } else if (
-              c == '"'
-            ) {
+            } else if (c == '"') {
 
               result += '"';
 
-            } else if (
-              c == '\\'
-            ) {
+            } else if (c == '\\') {
 
               result += '\\';
 
@@ -1352,15 +1017,11 @@ void analyzeWithGemini() {
 
           } else {
 
-            if (
-              c == '\\'
-            ) {
+            if (c == '\\') {
 
               escaped = true;
 
-            } else if (
-              c == '"'
-            ) {
+            } else if (c == '"') {
 
               break;
 
@@ -1373,73 +1034,49 @@ void analyzeWithGemini() {
 
         result.trim();
 
-        if (
-          result.length() > 0
-        ) {
+        if (result.length() > 0) {
 
-          aiMessage =
-            result;
+          aiMessage = result;
 
           Serial.println();
-          Serial.println(
-            "AI COACH:"
-          );
+          Serial.println("AI COACH:");
 
-          Serial.println(
-            aiMessage
-          );
+          Serial.println(aiMessage);
 
-          showAIMessage(
-            aiMessage
-          );
+          showAIMessage(aiMessage);
         }
 
       } else {
 
-        Serial.println(
-          "Could not parse Gemini text."
-        );
+        Serial.println("Could not parse Gemini text.");
       }
 
     } else {
 
-      Serial.println(
-        "No text found in Gemini response."
-      );
+      Serial.println("No text found in Gemini response.");
 
-      Serial.println(
-        response
-      );
+      Serial.println(response);
     }
 
   } else {
 
-    Serial.println(
-      "GEMINI REQUEST FAILED"
-    );
+    Serial.println("GEMINI REQUEST FAILED");
 
-    String error =
-      https.getString();
+    String error = https.getString();
 
-    Serial.println(
-      error
-    );
+    Serial.println(error);
   }
 
   https.end();
 
-  Serial.println(
-    "=============================="
-  );
+  Serial.println("==============================");
 }
 
 // =========================================================
 // AI TASK
 // =========================================================
 
-void geminiTask(
-  void* parameter
-) {
+void geminiTask(void *parameter) {
 
   aiRunning = true;
 
@@ -1456,29 +1093,17 @@ void geminiTask(
 
 void startAIAnalysis() {
 
-  if (
-    aiRunning
-  ) {
+  if (aiRunning) {
 
     return;
   }
 
-  if (
-    WiFi.status() != WL_CONNECTED
-  ) {
+  if (WiFi.status() != WL_CONNECTED) {
 
     return;
   }
 
-  xTaskCreatePinnedToCore(
-    geminiTask,
-    "GeminiTask",
-    12000,
-    NULL,
-    1,
-    NULL,
-    0
-  );
+  xTaskCreatePinnedToCore(geminiTask, "GeminiTask", 12000, NULL, 1, NULL, 0);
 }
 
 // =========================================================
@@ -1487,64 +1112,38 @@ void startAIAnalysis() {
 
 void setup() {
 
-  Serial.begin(
-    115200
-  );
+  Serial.begin(115200);
 
   delay(1000);
 
   Serial.println();
-  Serial.println(
-    "================================"
-  );
+  Serial.println("================================");
 
-  Serial.println(
-    "       VALLAM SYNC"
-  );
+  Serial.println("       VALLAM SYNC");
 
-  Serial.println(
-    "      AI ROWING COACH"
-  );
+  Serial.println("      AI ROWING COACH");
 
-  Serial.println(
-    "       WIFI UDP MODE"
-  );
+  Serial.println("       WIFI UDP MODE");
 
-  Serial.println(
-    "================================"
-  );
+  Serial.println("================================");
 
   // =======================================================
   // GPIO
   // =======================================================
 
-  pinMode(
-    TOUCH_PIN,
-    INPUT
-  );
+  pinMode(TOUCH_PIN, INPUT);
 
-  pinMode(
-    MOTOR_PIN,
-    OUTPUT
-  );
+  pinMode(MOTOR_PIN, OUTPUT);
 
-  digitalWrite(
-    MOTOR_PIN,
-    LOW
-  );
+  digitalWrite(MOTOR_PIN, LOW);
 
   // =======================================================
   // I2C
   // =======================================================
 
-  Wire.begin(
-    I2C_SDA,
-    I2C_SCL
-  );
+  Wire.begin(I2C_SDA, I2C_SCL);
 
-  Wire.setClock(
-    400000
-  );
+  Wire.setClock(400000);
 
   delay(100);
 
@@ -1552,20 +1151,11 @@ void setup() {
   // OLED
   // =======================================================
 
-  Serial.println(
-    "Starting OLED..."
-  );
+  Serial.println("Starting OLED...");
 
-  if (
-    !display.begin(
-      SSD1306_SWITCHCAPVCC,
-      OLED_ADDRESS
-    )
-  ) {
+  if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS)) {
 
-    Serial.println(
-      "OLED FAILED!"
-    );
+    Serial.println("OLED FAILED!");
 
     while (true) {
 
@@ -1573,62 +1163,33 @@ void setup() {
     }
   }
 
-  Serial.println(
-    "OLED OK!"
-  );
+  Serial.println("OLED OK!");
 
   display.clearDisplay();
 
-  display.setTextColor(
-    SSD1306_WHITE
-  );
+  display.setTextColor(SSD1306_WHITE);
 
   display.setTextSize(1);
 
-  display.setCursor(
-    0,
-    0
-  );
+  display.setCursor(0, 0);
 
-  display.println(
-    "VALLAM SYNC"
-  );
+  display.println("VALLAM SYNC");
 
-  display.setCursor(
-    0,
-    15
-  );
+  display.setCursor(0, 15);
 
-  display.println(
-    "AI ROWING COACH"
-  );
+  display.println("AI ROWING COACH");
 
-  display.setCursor(
-    0,
-    30
-  );
+  display.setCursor(0, 30);
 
-  display.println(
-    "ONAM RACE MODE"
-  );
+  display.println("ONAM RACE MODE");
 
-  display.setCursor(
-    0,
-    42
-  );
+  display.setCursor(0, 42);
 
-  display.println(
-    "WIFI UDP"
-  );
+  display.println("WIFI UDP");
 
-  display.setCursor(
-    0,
-    54
-  );
+  display.setCursor(0, 54);
 
-  display.println(
-    "Starting..."
-  );
+  display.println("Starting...");
 
   display.display();
 
@@ -1638,31 +1199,19 @@ void setup() {
   // MPU6500
   // =======================================================
 
-  if (
-    !initializeMPU6500()
-  ) {
+  if (!initializeMPU6500()) {
 
     display.clearDisplay();
 
     display.setTextSize(1);
 
-    display.setCursor(
-      0,
-      0
-    );
+    display.setCursor(0, 0);
 
-    display.println(
-      "MPU6500 ERROR"
-    );
+    display.println("MPU6500 ERROR");
 
-    display.setCursor(
-      0,
-      20
-    );
+    display.setCursor(0, 20);
 
-    display.println(
-      "WHO_AM_I failed"
-    );
+    display.println("WHO_AM_I failed");
 
     display.display();
 
@@ -1682,56 +1231,32 @@ void setup() {
   // UDP
   // =======================================================
 
-  if (
-    WiFi.status() == WL_CONNECTED
-  ) {
+  if (WiFi.status() == WL_CONNECTED) {
 
-    udp.begin(
-      UDP_PORT
-    );
+    udp.begin(UDP_PORT);
 
     Serial.println();
-    Serial.println(
-      "================================"
-    );
+    Serial.println("================================");
 
-    Serial.println(
-      "UDP WIFI READY!"
-    );
+    Serial.println("UDP WIFI READY!");
 
-    Serial.print(
-      "Sender IP: "
-    );
+    Serial.print("Sender IP: ");
 
-    Serial.println(
-      WiFi.localIP()
-    );
+    Serial.println(WiFi.localIP());
 
-    Serial.print(
-      "Gateway IP: "
-    );
+    Serial.print("Gateway IP: ");
 
-    Serial.println(
-      GATEWAY_IP
-    );
+    Serial.println(GATEWAY_IP);
 
-    Serial.print(
-      "UDP Port: "
-    );
+    Serial.print("UDP Port: ");
 
-    Serial.println(
-      UDP_PORT
-    );
+    Serial.println(UDP_PORT);
 
-    Serial.println(
-      "================================"
-    );
+    Serial.println("================================");
 
   } else {
 
-    Serial.println(
-      "UDP waiting for WiFi..."
-    );
+    Serial.println("UDP waiting for WiFi...");
   }
 
   // =======================================================
@@ -1743,52 +1268,30 @@ void setup() {
   updateDisplay();
 
   Serial.println();
-  Serial.println(
-    "================================"
-  );
+  Serial.println("================================");
 
-  Serial.println(
-    "SYSTEM READY"
-  );
+  Serial.println("SYSTEM READY");
 
-  Serial.println(
-    "MPU6500: OK"
-  );
+  Serial.println("MPU6500: OK");
 
-  Serial.println(
-    "OLED: OK"
-  );
+  Serial.println("OLED: OK");
 
-  if (
-    WiFi.status() == WL_CONNECTED
-  ) {
+  if (WiFi.status() == WL_CONNECTED) {
 
-    Serial.println(
-      "WiFi: OK"
-    );
+    Serial.println("WiFi: OK");
 
   } else {
 
-    Serial.println(
-      "WiFi: OFFLINE"
-    );
+    Serial.println("WiFi: OFFLINE");
   }
 
-  Serial.println(
-    "ESP-TO-ESP: UDP"
-  );
+  Serial.println("ESP-TO-ESP: UDP");
 
-  Serial.println(
-    "AI interval: 10 seconds"
-  );
+  Serial.println("AI interval: 10 seconds");
 
-  Serial.println(
-    "Rapid SPM detection: ON"
-  );
+  Serial.println("Rapid SPM detection: ON");
 
-  Serial.println(
-    "================================"
-  );
+  Serial.println("================================");
 }
 
 // =========================================================
@@ -1797,50 +1300,30 @@ void setup() {
 
 void loop() {
 
-  unsigned long currentMillis =
-    millis();
+  unsigned long currentMillis = millis();
 
   // =======================================================
   // TOUCH / MODE
   // =======================================================
 
-  bool touchState =
-    digitalRead(
-      TOUCH_PIN
-    );
+  bool touchState = digitalRead(TOUCH_PIN);
 
-  if (
-    touchState == HIGH &&
-    lastTouchState == LOW &&
-    currentMillis -
-    lastTouchTime > 300
-  ) {
+  if (touchState == HIGH && lastTouchState == LOW &&
+      currentMillis - lastTouchTime > 300) {
 
-    lastTouchTime =
-      currentMillis;
+    lastTouchTime = currentMillis;
 
-    currentMode =
-      static_cast<Mode>(
-        (currentMode + 1) % 4
-      );
+    currentMode = static_cast<Mode>((currentMode + 1) % 4);
 
     setTargetSPM();
 
-    Serial.print(
-      "MODE: "
-    );
+    Serial.print("MODE: ");
 
-    Serial.println(
-      currentMode
-    );
+    Serial.println(currentMode);
 
-    Serial.print(
-      "NEW TARGET SPM: "
-    );
+    Serial.print("NEW TARGET SPM: ");
 
-    Serial.println(
-      targetSPM
-    );
+    Serial.println(targetSPM);
 
     // Send new target to gateway immediately
     sendWiFiData();
@@ -1851,8 +1334,7 @@ void loop() {
     updateDisplay();
   }
 
-  lastTouchState =
-    touchState;
+  lastTouchState = touchState;
 
   // =======================================================
   // MOTOR
@@ -1868,84 +1350,50 @@ void loop() {
   float accelY;
   float accelZ;
 
-  readMPU6500(
-    accelX,
-    accelY,
-    accelZ
-  );
+  readMPU6500(accelX, accelY, accelZ);
 
   // =======================================================
   // ACCELERATION MAGNITUDE
   // =======================================================
 
-  float magnitude =
-    sqrt(
-      accelX * accelX +
-      accelY * accelY +
-      accelZ * accelZ
-    );
+  float magnitude = sqrt(accelX * accelX + accelY * accelY + accelZ * accelZ);
 
   // =======================================================
   // STROKE DETECTION
   // =======================================================
 
-  if (
-    magnitude > ACCEL_THRESHOLD &&
-    currentMillis -
-    lastDebounceTime >
-    MIN_STROKE_DELAY
-  ) {
+  if (magnitude > ACCEL_THRESHOLD &&
+      currentMillis - lastDebounceTime > MIN_STROKE_DELAY) {
 
     Serial.println();
-    Serial.println(
-      "******** STROKE ********"
-    );
+    Serial.println("******** STROKE ********");
 
-    Serial.print(
-      "Acceleration: "
-    );
+    Serial.print("Acceleration: ");
 
-    Serial.print(
-      magnitude,
-      2
-    );
+    Serial.print(magnitude, 2);
 
-    Serial.println(
-      " m/s2"
-    );
+    Serial.println(" m/s2");
 
     // =====================================================
     // CALCULATE SPM
     // =====================================================
 
-    if (
-      lastStrokeTime > 0
-    ) {
+    if (lastStrokeTime > 0) {
 
-      unsigned long interval =
-        currentMillis -
-        lastStrokeTime;
+      unsigned long interval = currentMillis - lastStrokeTime;
 
-      if (
-        interval > 0
-      ) {
+      if (interval > 0) {
 
-        currentSPM =
-          60000 /
-          interval;
+        currentSPM = 60000 / interval;
       }
 
       // Limit SPM
-      if (
-        currentSPM > 200
-      ) {
+      if (currentSPM > 200) {
 
         currentSPM = 200;
       }
 
-      if (
-        currentSPM < 20
-      ) {
+      if (currentSPM < 20) {
 
         currentSPM = 20;
       }
@@ -1954,45 +1402,27 @@ void loop() {
       // SPM CHANGE ANALYSIS
       // ===================================================
 
-      if (
-        previousSPM > 0
-      ) {
+      if (previousSPM > 0) {
 
-        int difference =
-          currentSPM -
-          previousSPM;
+        int difference = currentSPM - previousSPM;
 
         // -------------------------------------------------
         // RAPID INCREASE
         // -------------------------------------------------
 
-        if (
-          difference >=
-          RAPID_INCREASE_THRESHOLD
-        ) {
+        if (difference >= RAPID_INCREASE_THRESHOLD) {
 
-          paceContext =
-            "RAPID PACE INCREASE";
+          paceContext = "RAPID PACE INCREASE";
 
-          rapidChangeDetected =
-            true;
+          rapidChangeDetected = true;
 
-          Serial.println(
-            "!!! RAPID PACE INCREASE !!!"
-          );
+          Serial.println("!!! RAPID PACE INCREASE !!!");
 
-          Serial.print(
-            "SPM change: +"
-          );
+          Serial.print("SPM change: +");
 
-          Serial.println(
-            difference
-          );
+          Serial.println(difference);
 
-          showPaceWarning(
-            "PACE UP!",
-            "Control your pace."
-          );
+          showPaceWarning("PACE UP!", "Control your pace.");
 
           startMotor();
         }
@@ -2001,33 +1431,19 @@ void loop() {
         // RAPID DECREASE
         // -------------------------------------------------
 
-        else if (
-          difference <=
-          -RAPID_DECREASE_THRESHOLD
-        ) {
+        else if (difference <= -RAPID_DECREASE_THRESHOLD) {
 
-          paceContext =
-            "RAPID PACE DROP";
+          paceContext = "RAPID PACE DROP";
 
-          rapidChangeDetected =
-            true;
+          rapidChangeDetected = true;
 
-          Serial.println(
-            "!!! RAPID PACE DROP !!!"
-          );
+          Serial.println("!!! RAPID PACE DROP !!!");
 
-          Serial.print(
-            "SPM change: "
-          );
+          Serial.print("SPM change: ");
 
-          Serial.println(
-            difference
-          );
+          Serial.println(difference);
 
-          showPaceWarning(
-            "PACE DROP!",
-            "Build rhythm slowly."
-          );
+          showPaceWarning("PACE DROP!", "Build rhythm slowly.");
 
           startMotor();
         }
@@ -2036,17 +1452,11 @@ void loop() {
         // RHYTHM UNSTABLE
         // -------------------------------------------------
 
-        else if (
-          abs(difference) >=
-          RHYTHM_CHANGE_THRESHOLD
-        ) {
+        else if (abs(difference) >= RHYTHM_CHANGE_THRESHOLD) {
 
-          paceContext =
-            "RHYTHM UNSTABLE";
+          paceContext = "RHYTHM UNSTABLE";
 
-          Serial.println(
-            "RHYTHM UNSTABLE"
-          );
+          Serial.println("RHYTHM UNSTABLE");
         }
 
         // -------------------------------------------------
@@ -2055,17 +1465,14 @@ void loop() {
 
         else {
 
-          paceContext =
-            "NORMAL";
+          paceContext = "NORMAL";
         }
       }
 
-      previousSPM =
-        currentSPM;
+      previousSPM = currentSPM;
 
       // Statistics
-      spmSum +=
-        currentSPM;
+      spmSum += currentSPM;
 
       spmSamples++;
     }
@@ -2074,16 +1481,11 @@ void loop() {
     // ACCELERATION STATISTICS
     // =====================================================
 
-    accelerationSum +=
-      magnitude;
+    accelerationSum += magnitude;
 
-    if (
-      magnitude >
-      accelerationMax
-    ) {
+    if (magnitude > accelerationMax) {
 
-      accelerationMax =
-        magnitude;
+      accelerationMax = magnitude;
     }
 
     strokeCount++;
@@ -2092,20 +1494,15 @@ void loop() {
     // SAVE TIME
     // =====================================================
 
-    lastStrokeTime =
-      currentMillis;
+    lastStrokeTime = currentMillis;
 
-    lastDebounceTime =
-      currentMillis;
+    lastDebounceTime = currentMillis;
 
     // =====================================================
     // HAPTIC FEEDBACK
     // =====================================================
 
-    if (
-      currentSPM <
-      targetSPM - 5
-    ) {
+    if (currentSPM < targetSPM - 5) {
 
       startMotor();
     }
@@ -2114,10 +1511,7 @@ void loop() {
     // OLED
     // =====================================================
 
-    if (
-      paceContext ==
-      "NORMAL"
-    ) {
+    if (paceContext == "NORMAL") {
 
       updateDisplay();
     }
@@ -2133,46 +1527,28 @@ void loop() {
     // DEBUG
     // =====================================================
 
-    Serial.print(
-      "SPM: "
-    );
+    Serial.print("SPM: ");
 
-    Serial.print(
-      currentSPM
-    );
+    Serial.print(currentSPM);
 
-    Serial.print(
-      " | Target: "
-    );
+    Serial.print(" | Target: ");
 
-    Serial.print(
-      targetSPM
-    );
+    Serial.print(targetSPM);
 
-    Serial.print(
-      " | Context: "
-    );
+    Serial.print(" | Context: ");
 
-    Serial.println(
-      paceContext
-    );
+    Serial.println(paceContext);
   }
 
   // =======================================================
   // NO STROKE
   // =======================================================
 
-  if (
-    currentSPM > 0 &&
-    currentMillis -
-    lastStrokeTime >
-    3000
-  ) {
+  if (currentSPM > 0 && currentMillis - lastStrokeTime > 3000) {
 
     currentSPM = 0;
 
-    paceContext =
-      "NO STROKE";
+    paceContext = "NO STROKE";
 
     updateDisplay();
 
@@ -2185,24 +1561,14 @@ void loop() {
   // RAPID CHANGE AI
   // =======================================================
 
-  if (
-    rapidChangeDetected &&
-    !aiRunning &&
-    WiFi.status() == WL_CONNECTED &&
-    currentMillis -
-    lastAIRequest >=
-    AI_CONTEXT_COOLDOWN
-  ) {
+  if (rapidChangeDetected && !aiRunning && WiFi.status() == WL_CONNECTED &&
+      currentMillis - lastAIRequest >= AI_CONTEXT_COOLDOWN) {
 
-    rapidChangeDetected =
-      false;
+    rapidChangeDetected = false;
 
-    lastAIRequest =
-      currentMillis;
+    lastAIRequest = currentMillis;
 
-    Serial.println(
-      ">>> RAPID CHANGE AI"
-    );
+    Serial.println(">>> RAPID CHANGE AI");
 
     startAIAnalysis();
   }
@@ -2211,20 +1577,12 @@ void loop() {
   // NORMAL AI EVERY 10 SECONDS
   // =======================================================
 
-  if (
-    !aiRunning &&
-    WiFi.status() == WL_CONNECTED &&
-    currentMillis -
-    lastAIRequest >=
-    AI_ANALYSIS_INTERVAL
-  ) {
+  if (!aiRunning && WiFi.status() == WL_CONNECTED &&
+      currentMillis - lastAIRequest >= AI_ANALYSIS_INTERVAL) {
 
-    lastAIRequest =
-      currentMillis;
+    lastAIRequest = currentMillis;
 
-    Serial.println(
-      ">>> 10 SECOND AI ANALYSIS"
-    );
+    Serial.println(">>> 10 SECOND AI ANALYSIS");
 
     startAIAnalysis();
   }
