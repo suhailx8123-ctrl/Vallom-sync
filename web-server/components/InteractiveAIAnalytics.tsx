@@ -6,6 +6,7 @@ import { Brain, MessageSquare, Activity, AlertTriangle, CheckCircle, Zap } from 
 export default function InteractiveAIAnalytics() {
   const [analysis, setAnalysis] = useState<any>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+  const [globalError, setGlobalError] = useState<string | null>(null);
   
   const [chatInput, setChatInput] = useState("");
   const [chatHistory, setChatHistory] = useState<{role: string, text: string}[]>([]);
@@ -13,12 +14,18 @@ export default function InteractiveAIAnalytics() {
 
   const handleAnalyzeSession = async () => {
     setIsLoadingAnalysis(true);
+    setGlobalError(null);
     try {
       const res = await fetch("/api/analytics", { method: "POST" });
       const data = await res.json();
+      if (!res.ok) {
+        setGlobalError(data.error || "Failed to analyze session");
+        return;
+      }
       setAnalysis(data);
     } catch (e) {
       console.error(e);
+      setGlobalError("Network error while connecting to analytics API.");
     } finally {
       setIsLoadingAnalysis(false);
     }
@@ -32,6 +39,7 @@ export default function InteractiveAIAnalytics() {
     setChatInput("");
     setChatHistory(prev => [...prev, { role: "user", text: userMessage }]);
     setIsChatLoading(true);
+    setGlobalError(null);
 
     try {
       const res = await fetch("/api/ai-chat", {
@@ -40,9 +48,15 @@ export default function InteractiveAIAnalytics() {
         body: JSON.stringify({ prompt: userMessage })
       });
       const data = await res.json();
+      if (!res.ok) {
+        setGlobalError(data.error || "Failed to connect to AI Coach");
+        setChatHistory(prev => [...prev, { role: "ai", text: "Error connecting to AI Coach." }]);
+        return;
+      }
       setChatHistory(prev => [...prev, { role: "ai", text: data.reply || "No response." }]);
     } catch (e) {
       console.error(e);
+      setGlobalError("Network error while connecting to AI chat API.");
       setChatHistory(prev => [...prev, { role: "ai", text: "Error connecting to AI Coach." }]);
     } finally {
       setIsChatLoading(false);
@@ -64,6 +78,13 @@ export default function InteractiveAIAnalytics() {
           {isLoadingAnalysis ? "Analyzing..." : "Analyze Session"}
         </button>
       </div>
+
+      {globalError && (
+        <div className="bg-red-950/50 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
+          <p>{globalError}</p>
+        </div>
+      )}
 
       {analysis && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

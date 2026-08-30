@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     const logs = snapshot.docs.map(doc => doc.data());
 
     if (logs.length === 0) {
-      return NextResponse.json({ error: "No telemetry data available for analysis." }, { status: 400 });
+      return NextResponse.json({ error: "No telemetry data found in Firebase to analyze. Start rowing first!" }, { status: 400 });
     }
 
     const avgConsistency = logs.reduce((acc, log) => acc + (log.consistency || 0), 0) / logs.length;
@@ -42,12 +42,22 @@ export async function POST(req: NextRequest) {
       })
     });
 
+    const geminiData = await geminiRes.json();
+    
     if (!geminiRes.ok) {
-      throw new Error("Failed to query Gemini API");
+      console.error("GEMINI API ERROR:", geminiData);
+      return NextResponse.json(
+        { error: `Gemini API Failed: ${geminiData.error?.message || "Unknown Error"}` }, 
+        { status: geminiRes.status }
+      );
     }
 
-    const geminiData = await geminiRes.json();
-    let aiText = geminiData.candidates[0].content.parts[0].text;
+    let aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!aiText) {
+       console.error("GEMINI RETURNED EMPTY TEXT:", geminiData);
+       return NextResponse.json({ error: "Gemini connected, but returned no text format." }, { status: 500 });
+    }
     
     // Clean up potential markdown formatting
     aiText = aiText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();

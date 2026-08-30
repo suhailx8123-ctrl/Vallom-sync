@@ -14,6 +14,10 @@ export async function POST(req: NextRequest) {
     const snapshot = await getDocs(q);
     const logs = snapshot.docs.map(doc => doc.data());
 
+    if (logs.length === 0) {
+      return NextResponse.json({ error: "No telemetry data found in Firebase to analyze. Start rowing first!" }, { status: 400 });
+    }
+
     let contextData = "No recent data available.";
     if (logs.length > 0) {
       const avgConsistency = logs.reduce((acc, log) => acc + (log.consistency || 0), 0) / logs.length;
@@ -34,12 +38,22 @@ export async function POST(req: NextRequest) {
       })
     });
 
+    const geminiData = await geminiRes.json();
+    
     if (!geminiRes.ok) {
-      throw new Error("Failed to query Gemini API");
+      console.error("GEMINI API ERROR:", geminiData);
+      return NextResponse.json(
+        { error: `Gemini API Failed: ${geminiData.error?.message || "Unknown Error"}` }, 
+        { status: geminiRes.status }
+      );
     }
 
-    const geminiData = await geminiRes.json();
-    const aiText = geminiData.candidates[0].content.parts[0].text;
+    const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!aiText) {
+       console.error("GEMINI RETURNED EMPTY TEXT:", geminiData);
+       return NextResponse.json({ error: "Gemini connected, but returned no text format." }, { status: 500 });
+    }
     
     return NextResponse.json({ reply: aiText });
 
