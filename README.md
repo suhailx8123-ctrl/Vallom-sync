@@ -6,8 +6,8 @@
 
 <img width="1920" height="1080" alt="brave_IGIpDorxQz" src="https://github.com/user-attachments/assets/b296cbba-2267-462e-b00f-223e2d8792b0" />
 
+<img width="900" height="1600" alt="WhatsApp Image 2026-08-30 at 11 48 14 AM" src="https://github.com/user-attachments/assets/4dc4b4e9-45bf-4499-b7e4-97797e61547e" />
 
-<img width="900" height="1600" alt="WhatsApp Image 2026-08-30 at 11 48 14 AM (1)" src="https://github.com/user-attachments/assets/332c23ea-4a9c-4ca5-b620-bac8132148ec" />
 
 
 ## 🌟 Features
