@@ -6,6 +6,7 @@ import TelemetryGauges from "@/components/TelemetryGauges";
 import RhythmVisualizer from "@/components/RhythmVisualizer";
 import AISpeechFeed from "@/components/AISpeechFeed";
 import CrewSyncGrid from "@/components/CrewSyncGrid";
+import InteractiveAIAnalytics from "@/components/InteractiveAIAnalytics";
 import { TelemetryPacket, CoachAdvice } from "@/lib/store";
 
 export default function VallamDashboard() {
@@ -161,6 +162,9 @@ export default function VallamDashboard() {
 
         {/* Row 3: Boat Crew Synchronization Pods */}
         <CrewSyncGrid athletes={[telemetry]} targetSPM={targetSPM} />
+
+        {/* Row 4: AI Analysis Workspace */}
+        <InteractiveAIAnalytics />
       </div>
 
       <footer className="border-t border-zinc-900 py-4 text-center text-xs text-zinc-600">

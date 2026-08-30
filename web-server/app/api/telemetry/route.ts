@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { store, TelemetryPacket } from "@/lib/store";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +35,11 @@ export async function POST(req: NextRequest) {
     if (store.history.length > 200) {
       store.history.shift();
     }
+
+    addDoc(collection(db, "telemetry_logs"), {
+      ...packet,
+      createdAt: serverTimestamp(),
+    }).catch(e => console.error("Firebase write error:", e));
 
     return NextResponse.json({
       success: true,
