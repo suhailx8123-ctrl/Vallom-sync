@@ -4,6 +4,14 @@ import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 
 export async function POST(req: NextRequest) {
   try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "GEMINI_API_KEY is not configured. Add it to Vercel Environment Variables." },
+        { status: 500 }
+      );
+    }
+
     const q = query(collection(db, 'telemetry_logs'), orderBy('createdAt', 'desc'), limit(50));
     const snapshot = await getDocs(q);
     const logs = snapshot.docs.map(doc => doc.data());
@@ -34,7 +42,7 @@ export async function POST(req: NextRequest) {
       Do NOT include any markdown formatting or backticks around the JSON. Just return the raw JSON.
     `;
 
-    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

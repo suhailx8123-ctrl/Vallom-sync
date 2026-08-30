@@ -4,6 +4,14 @@ import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
 
 export async function POST(req: NextRequest) {
   try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "GEMINI_API_KEY is not configured. Add it to Vercel Environment Variables." },
+        { status: 500 }
+      );
+    }
+
     const { prompt } = await req.json();
     
     if (!prompt) {
@@ -28,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     const systemInstruction = `You are an expert Vallamkali (snake boat) rowing tactician. Answer the athlete's question concisely based on their actual rowing numbers. Context: ${contextData}`;
 
-    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+    const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
