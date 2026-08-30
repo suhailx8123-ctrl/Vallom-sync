@@ -1,4 +1,4 @@
-<img width="1920" height="1080" alt="brave_IGIpDorxQz" src="https://github.com/user-attachments/assets/66e23ca2-c930-40e6-b680-54f62401814e" /># Vallam Sync 🛶
+# Vallam Sync 🛶
 
 **Vallam Sync** is an intelligent IoT telemetry and AI coaching platform designed specifically for traditional Kerala Vallamkali (snake boat) rowing. It synchronizes performance data across the crew, visualizes real-time metrics, and provides actionable AI coaching feedback to improve rhythm, consistency, and pacing.
 <img width="1920" height="1080" alt="brave_9qEiwtjQAW" src="https://github.com/user-attachments/assets/ee710e5d-71b1-43ce-a2fc-0216da943edd" />
