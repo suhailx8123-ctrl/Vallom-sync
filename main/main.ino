@@ -25,6 +25,7 @@
 
 const char* WIFI_SSID = "Tinker Space";
 const char* WIFI_PASSWORD = "123tinkerspace";
+const char* WEB_API_URL = "https://vallom-sync-tracker.vercel.app/api/telemetry";
 
 // =========================================================
 // WIFI UDP
@@ -852,6 +853,79 @@ void sendWiFiData() {
       "UDP SEND FAILED!"
     );
   }
+}
+
+// =========================================================
+// SEND TELEMETRY TO WEB
+// =========================================================
+
+void sendTelemetryToWeb() {
+
+  if (WiFi.status() != WL_CONNECTED) {
+    return;
+  }
+
+  WiFiClientSecure client;
+  client.setInsecure();
+
+  HTTPClient https;
+  https.setTimeout(6000);
+
+  if (!https.begin(client, WEB_API_URL)) {
+    Serial.println("HTTPS BEGIN FAILED!");
+    return;
+  }
+
+  https.addHeader("Content-Type", "application/json");
+
+  float avgAccel = (strokeCount > 0) ? (accelerationSum / strokeCount) : 0;
+
+  float consistency = 100;
+  if (targetSPM > 0) {
+    float diff = abs(currentSPM - targetSPM);
+    consistency = 100 - (diff / targetSPM) * 100;
+    if (consistency < 0) {
+      consistency = 0;
+    }
+  }
+
+  String json = "{";
+  json += "\"athlete_id\":" + String(ATHLETE_ID) + ",";
+  json += "\"current_spm\":" + String(currentSPM) + ",";
+  json += "\"target_spm\":" + String(targetSPM) + ",";
+  json += "\"accel_max\":" + String(accelerationMax, 2) + ",";
+  json += "\"avg_accel\":" + String(avgAccel, 2) + ",";
+  json += "\"stroke_count\":" + String(strokeCount) + ",";
+  json += "\"pace_context\":\"" + jsonEscape(paceContext) + "\",";
+  json += "\"consistency\":" + String(consistency, 1);
+  json += "}";
+
+  int httpCode = https.POST(json);
+
+  if (httpCode > 0) {
+    Serial.print("Web Telemetry sent. HTTP code: ");
+    Serial.println(httpCode);
+
+    String response = https.getString();
+    int targetIndex = response.indexOf("\"targetSPM\":");
+    if (targetIndex != -1) {
+      int colonIndex = response.indexOf(':', targetIndex);
+      if (colonIndex != -1) {
+        String targetStr = response.substring(colonIndex + 1);
+        int newTarget = targetStr.toInt();
+        if (newTarget > 0) {
+          targetSPM = newTarget;
+          Serial.print("Updated Target SPM from Web: ");
+          Serial.println(targetSPM);
+        }
+      }
+    }
+  } else {
+    Serial.print("Web Telemetry failed, error: ");
+    Serial.println(https.errorToString(httpCode).c_str());
+  }
+
+  https.end();
 }
 
 // =========================================================
@@ -1770,6 +1844,7 @@ void loop() {
 
     // Send new target to gateway immediately
     sendWiFiData();
+    sendTelemetryToWeb();
 
     startMotor();
 
@@ -2052,6 +2127,7 @@ void loop() {
     // =====================================================
 
     sendWiFiData();
+    sendTelemetryToWeb();
 
     // =====================================================
     // DEBUG
@@ -2102,6 +2178,7 @@ void loop() {
 
     // Tell gateway that athlete has stopped
     sendWiFiData();
+    sendTelemetryToWeb();
   }
 
   // =======================================================

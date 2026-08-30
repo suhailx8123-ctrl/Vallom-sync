@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       received: packet,
+      targetSPM: store.globalTargetSPM,
     });
   } catch (error: any) {
     return NextResponse.json(

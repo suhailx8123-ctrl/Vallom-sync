@@ -22,6 +22,7 @@ declare global {
     athletes: Map<number, TelemetryPacket>;
     history: TelemetryPacket[];
     latestAdvice: CoachAdvice | null;
+    globalTargetSPM: number;
   } | undefined;
 }
 
@@ -34,6 +35,7 @@ if (!global.vallamStore) {
       timestamp: Date.now(),
       urgency: "normal",
     },
+    globalTargetSPM: 90,
   };
 }
 

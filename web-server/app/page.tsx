@@ -34,9 +34,17 @@ export default function VallamDashboard() {
       case "NORMAL": setTargetSPM(90); break;
       case "MEDIUM": setTargetSPM(100); break;
       case "HIGH_SPEED": setTargetSPM(120); break;
-      case "CUSTOM": setTargetSPM(95); break;
     }
   }, [mode]);
+
+  // Sync targetSPM with backend when it changes
+  useEffect(() => {
+    fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target_spm: targetSPM }),
+    }).catch(console.error);
+  }, [targetSPM]);
 
   // Polling Server Telemetry (every 600ms)
   useEffect(() => {
@@ -129,6 +137,8 @@ export default function VallamDashboard() {
         isSimulating={isSimulating}
         toggleSimulation={() => setIsSimulating(!isSimulating)}
         isConnected={isConnected || isSimulating}
+        targetSPM={targetSPM}
+        setTargetSPM={setTargetSPM}
       />
 
       <div className="flex-1 max-w-7xl w-full mx-auto px-4 py-6 sm:px-6 space-y-6">

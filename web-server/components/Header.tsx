@@ -9,6 +9,8 @@ interface HeaderProps {
   isSimulating: boolean;
   toggleSimulation: () => void;
   isConnected: boolean;
+  targetSPM: number;
+  setTargetSPM: (spm: number) => void;
 }
 
 export default function Header({
@@ -17,6 +19,8 @@ export default function Header({
   isSimulating,
   toggleSimulation,
   isConnected,
+  targetSPM,
+  setTargetSPM,
 }: HeaderProps) {
   const modes = ["NORMAL", "MEDIUM", "HIGH_SPEED", "CUSTOM"];
 
@@ -39,7 +43,7 @@ export default function Header({
         {/* Controls & Badges */}
         <div className="flex items-center flex-wrap gap-2.5">
           {/* Mode Selector */}
-          <div className="flex bg-zinc-900 border border-zinc-800 rounded-lg p-1">
+          <div className="flex bg-zinc-900 border border-zinc-800 rounded-lg p-1 items-center">
             {modes.map((m) => (
               <button
                 key={m}
@@ -51,6 +55,16 @@ export default function Header({
                 {m}
               </button>
             ))}
+            {mode === "CUSTOM" && (
+              <input
+                type="number"
+                min={40}
+                max={150}
+                value={targetSPM}
+                onChange={(e) => setTargetSPM(Number(e.target.value))}
+                className="ml-2 w-16 bg-zinc-800 text-white text-xs px-2 py-1 rounded border border-zinc-700 outline-none focus:border-amber-500"
+              />
+            )}
           </div>
 
           {/* Hardware Status */}
