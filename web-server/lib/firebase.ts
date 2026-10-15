@@ -3,13 +3,13 @@ import { getFirestore } from "firebase/firestore";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBiWXLvOzRQow72BjQtCqC1OWXf75CLFUM",
-  authDomain: "sync-54575.firebaseapp.com",
-  projectId: "sync-54575",
-  storageBucket: "sync-54575.firebasestorage.app",
-  messagingSenderId: "701132833405",
-  appId: "1:701132833405:web:a75a9c3ddc49c393912714",
-  measurementId: "G-B0ZXB2NF3S"
+  apiKey: "YOUR_API_KEY_HERE",
+  authDomain: "your-project-id.firebaseapp.com",
+  projectId: "your-project-id",
+  storageBucket: "your-project-id.firebasestorage.app",
+  messagingSenderId: "123456789012",
+  appId: "1:123456789012:web:abcdef1234567890abcdef",
+  measurementId: "G-XXXXXXXXXX"
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
